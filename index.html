@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Al-Haqq Digital — WhatsApp Assistant Demo</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+  body {
+    background: linear-gradient(160deg, #064e3b 0%, #022c22 60%, #01180f 100%);
+    min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px;
+  }
+  .wrap { width: 100%; max-width: 900px; }
+  .brand { text-align: center; color: #d4af37; margin-bottom: 18px; }
+  .brand h1 { font-size: 1.5rem; letter-spacing: 1px; }
+  .brand p { color: #a7f3d0; font-size: 0.85rem; margin-top: 6px; }
+  .cols { display: flex; gap: 24px; align-items: stretch; flex-wrap: wrap; }
+  .phone {
+    width: 380px; max-width: 100%; background: #0b141a; border-radius: 22px; overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,.5); border: 1px solid #1f2c33; flex-shrink: 0;
+  }
+  .phone-header {
+    background: #1f2c34; padding: 14px 16px; display: flex; align-items: center; gap: 12px;
+  }
+  .avatar {
+    width: 42px; height: 42px; border-radius: 50%; background: #065f46; display: flex;
+    align-items: center; justify-content: center; font-size: 21px; color: #fff;
+  }
+  .phone-header b { color: #e9edef; display: block; font-size: 0.95rem; }
+  .phone-header span { color: #8696a0; font-size: 0.72rem; }
+  .chat { height: 430px; overflow-y: auto; padding: 16px; background: #0b141a; }
+  .msg { max-width: 82%; padding: 9px 12px; border-radius: 12px; font-size: 0.87rem; line-height: 1.45; margin-bottom: 10px; white-space: pre-wrap; word-wrap: break-word; }
+  .bot { background: #202c33; color: #e9edef; border-top-left-radius: 2px; }
+  .me  { background: #005c4b; color: #e9edef; margin-left: auto; border-top-right-radius: 2px; }
+  .chat::-webkit-scrollbar { width: 6px; } .chat::-webkit-scrollbar-thumb { background: #1f2c33; border-radius: 3px; }
+  .composer { display: flex; gap: 8px; padding: 12px; background: #1f2c34; }
+  .composer input {
+    flex: 1; background: #2a3942; border: none; outline: none; color: #e9edef;
+    padding: 12px 14px; border-radius: 24px; font-size: 0.9rem;
+  }
+  .composer button, .chips button {
+    background: #d4af37; color: #022c22; border: none; font-weight: 600; padding: 10px 18px;
+    border-radius: 24px; cursor: pointer; font-size: 0.85rem;
+  }
+  .composer button:disabled, .chips button:disabled { opacity: .5; cursor: wait; }
+  .info { flex: 1; min-width: 260px; color: #d1fae5; }
+  .info .card {
+    background: rgba(255,255,255,.06); border: 1px solid rgba(212,175,55,.25);
+    border-radius: 16px; padding: 20px 22px; margin-bottom: 14px;
+  }
+  .info h2 { color: #d4af37; font-size: 1rem; margin-bottom: 10px; }
+  .info p, .info li { font-size: 0.85rem; line-height: 1.6; color: #a7f3d0; }
+  .info ul { padding-left: 18px; margin-top: 6px; }
+  .info a { color: #d4af37; text-decoration: none; font-weight: 600; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .foot { text-align: center; color: #6b8f81; font-size: 0.72rem; margin-top: 18px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">
+    <h1>AL-HAQQ DIGITAL</h1>
+    <p>Masjid &amp; Madrasa WhatsApp Assistant — live demo</p>
+  </div>
+  <div class="cols">
+    <div class="phone">
+      <div class="phone-header">
+        <div class="avatar">🕌</div>
+        <div><b>Masjid Assistant</b><span>online</span></div>
+      </div>
+      <div class="chat" id="chat"></div>
+      <div class="chips">
+        <button data-msg="prayer times">Prayer times</button>
+        <button data-msg="how much are the fees?">Fees</button>
+        <button data-msg="I want to book an appointment with the imam">Book</button>
+        <button data-msg="how do I apply for admission?">Admissions</button>
+      </div>
+      <div class="composer">
+        <input id="input" placeholder="Type a message..." autocomplete="off">
+        <button id="send">Send</button>
+      </div>
+    </div>
+    <div class="info">
+      <div class="card">
+        <h2>What you're seeing</h2>
+        <p>The same AI that answers a WhatsApp number is answering you here. Try it — ask for prayer times (live from Accra), school fees, admissions, events, donations, or book an appointment.</p>
+      </div>
+      <div class="card">
+        <h2>For your organisation</h2>
+        <ul>
+          <li>Answers members 24/7 — prayer times, fees, programmes</li>
+          <li>Books appointments straight from WhatsApp</li>
+          <li>Customised with your masjid's real information</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h2>Get it for your masjid</h2>
+        <p>Al-Haqq Digital sets it up on your own WhatsApp number in days.</p>
+        <p style="margin-top:8px">WhatsApp: +233 54 182 1537<br>Email: rahimsadiq02@gmail.com</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot">Al-Haqq Digital — Web &amp; AI services for the Ummah in Ghana 🇬🇭</div>
+</div>
+<script>
+  const chat = document.getElementById('chat');
+  const input = document.getElementById('input');
+  const send = document.getElementById('send');
+  const typingEl = document.createElement('div');
+
+  function bubble(text, who) {
+    const d = document.createElement('div');
+    d.className = 'msg ' + who;
+    d.textContent = text;
+    chat.appendChild(d);
+    chat.scrollTop = chat.scrollHeight;
+  }
+  function typing(on) {
+    if (on) { typingEl.className = 'msg bot'; typingEl.textContent = '...'; chat.appendChild(typingEl); chat.scrollTop = chat.scrollHeight; }
+    else if (typingEl.parentNode) typingEl.remove();
+  }
+  async function ask(msg) {
+    if (!msg.trim()) return;
+    bubble(msg, 'me');
+    input.value = ''; send.disabled = true; typing(true);
+    try {
+      const r = await fetch('/api/wa', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dryRun: true, message: msg })
+      });
+      const j = await r.json();
+      typing(false);
+      bubble(j.reply || 'Sorry, something went wrong.', 'bot');
+    } catch (e) {
+      typing(false); bubble('Connection problem — please try again.', 'bot');
+    }
+    send.disabled = false;
+  }
+  send.onclick = () => ask(input.value);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') ask(input.value); });
+  document.querySelectorAll('.chips button').forEach(b => b.onclick = () => ask(b.dataset.msg));
+  ask('as-salamu alaykum');
+</script>
+</body>
+</html>
