@@ -20,10 +20,29 @@ WhatsApp automation for masjids & madrasas, by Al-Haqq Digital.
    - `WHATSAPP_CLOUD_TOKEN` — permanent access token
    - `WHATSAPP_PHONE_NUMBER_ID` — phone number ID
    - `VERIFY_TOKEN` — keep default `alhaqq-demo-2026` or change it
+   - `WHATSAPP_APP_SECRET` — App secret from the Meta app dashboard (verifies that webhooks really come from Meta)
+   - `OFFICE_WEBHOOK_URL` — optional but recommended: a Slack / Discord / Google Chat webhook where appointment requests are posted so the office sees them instantly
+   - `OFFICE_WHATSAPP` — optional: office staff WhatsApp number (country code, no +) who receive booking alerts
 4. In Meta → WhatsApp Manager → Configuration:
    - Callback URL: `https://YOUR-DEPLOYMENT.vercel.app/api/wa`
    - Verify token: `alhaqq-demo-2026`
 5. Send a WhatsApp message to the number — the assistant replies automatically.
+
+## How bookings reach the office
+
+When a customer sends `Book — name — need — day`, the assistant:
+1. logs the request in the Vercel function logs (never lost),
+2. posts it to `OFFICE_WEBHOOK_URL` if set (recommended — always delivers),
+3. sends it to `OFFICE_WHATSAPP` if set (note: Meta only delivers business-initiated
+   WhatsApp messages inside a 24-hour customer window, so the webhook is the reliable path),
+then confirms to the customer that the office has been notified.
+
+## Security
+
+With `WHATSAPP_APP_SECRET` set, every webhook POST is checked against Meta's
+`X-Hub-Signature-256` header and rejected if it doesn't match — nobody can
+fake messages to the assistant. Without the secret set (demo deployments),
+the check is skipped.
 
 ## Customise for a client
 
