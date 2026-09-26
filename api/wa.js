@@ -8,6 +8,15 @@
 //   WHATSAPP_CLOUD_TOKEN  — permanent access token from Meta
 //   WHATSAPP_PHONE_NUMBER_ID — phone number ID from WhatsApp Manager
 //   VERIFY_TOKEN — any string you choose (default: alhaqq-demo-2026)
+//   WHATSAPP_APP_SECRET — App secret from Meta app dashboard (enables signature checks)
+//   OFFICE_WEBHOOK_URL — optional: Slack/Discord/Google Chat webhook to receive booking alerts
+//   OFFICE_WHATSAPP — optional: office staff WhatsApp number (country code, no +) for booking alerts
+
+import crypto from "crypto";
+
+export const config = {
+  api: { bodyParser: false } // we need the raw body to verify Meta's signature
+};
 
 const FAQ = {
   fees: "💳 *School & Programme Fees*\n\nPrimary (KG–P6): ₵450 per term\nJHS (JSS 1–3): ₵550 per term\n\nPayment via Mobile Money (MoMo) on *024XXXXXXX* or at the school office.\n\nType *menu* for more options.",
@@ -17,6 +26,9 @@ const FAQ = {
 };
 
 const VERIFY_TOKEN = process.env.VERIFY_TOKEN || "alhaqq-demo-2026";
+const APP_SECRET = process.env.WHATSAPP_APP_SECRET || "";
+const OFFICE_WEBHOOK_URL = process.env.OFFICE_WEBHOOK_URL || "";
+const OFFICE_WHATSAPP = process.env.OFFICE_WHATSAPP || "";
 
 function menu() {
   return "🕌 *As-salamu alaykum! Welcome to the Masjid & Madrasa Assistant*\n\nI can help you with:\n\n1️⃣ *Prayer times* — today's times in Accra\n2️⃣ *Fees* — school & programme fees\n3️⃣ *Admissions* — how to apply\n4️⃣ *Events* — upcoming programmes\n5️⃣ *Donations* — support the masjid\n6️⃣ *Book* — appointment with the imam or a teacher\n\nJust type a word like *prayer*, *fees*, or *book*.";
@@ -58,6 +70,50 @@ function classify(text) {
   return "unknown";
 }
 
+// ---------------------------------------------------------------------------
+// Booking delivery — makes sure the office actually SEES appointment requests
+// ---------------------------------------------------------------------------
+async function deliverBooking(from, text) {
+  const alert =
+    "📅 *New appointment request*\n\n" +
+    "From: " + from + "\n" +
+    "Message: " + text + "\n\n" +
+    "Reply to the customer on WhatsApp to confirm, in shaa Allah.";
+
+  // Always logged in Vercel function logs (searchable, nothing is lost)
+  console.log("[BOOKING]", JSON.stringify({ from, text, at: new Date().toISOString() }));
+
+  const results = [];
+
+  // Option A: push to a chat webhook (Slack / Discord / Google Chat) — most reliable
+  if (OFFICE_WEBHOOK_URL) {
+    try {
+      const r = await fetch(OFFICE_WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: alert })
+      });
+      results.push("webhook:" + r.status);
+    } catch (e) {
+      results.push("webhook:error");
+    }
+  }
+
+  // Option B: WhatsApp the office staff directly.
+  // NOTE: Meta only delivers business-initiated messages inside a 24h window
+  // (or with an approved template). Keep OFFICE_WEBHOOK_URL as the reliable path.
+  if (OFFICE_WHATSAPP) {
+    try {
+      const r = await sendWhatsApp(OFFICE_WHATSAPP, alert);
+      results.push("whatsapp:" + r.status);
+    } catch (e) {
+      results.push("whatsapp:error");
+    }
+  }
+
+  return results;
+}
+
 async function generateReply(text, from) {
   const intent = classify(text);
 
@@ -70,7 +126,8 @@ async function generateReply(text, from) {
 
   if (intent === "book") {
     if (text.length > 25) {
-      return "✅ *Appointment request received!*\n\nOur office will confirm your appointment by WhatsApp within a few hours, in shaa Allah.\n\nType *menu* for more options.";
+      await deliverBooking(from, text);
+      return "✅ *Appointment request received!*\n\nOur office has been notified and will confirm your appointment by WhatsApp within a few hours, in shaa Allah.\n\nType *menu* for more options.";
     }
     return "📅 *Book an Appointment*\n\nTo book with the imam or a teacher, send:\n\n*Book* — your name — what you need — preferred day\n\nExample: *Book — Musah — marriage counselling — Friday*\n\nWe'll confirm within a few hours.";
   }
@@ -99,6 +156,28 @@ async function sendWhatsApp(to, reply) {
   return { status: "replied", graph_status: res.status };
 }
 
+// ---------------------------------------------------------------------------
+// Raw body + Meta signature verification
+// ---------------------------------------------------------------------------
+async function readRawBody(req) {
+  const chunks = [];
+  for await (const chunk of req) chunks.push(chunk);
+  return Buffer.concat(chunks);
+}
+
+function signatureValid(rawBody, header) {
+  if (!APP_SECRET) return true; // no secret configured → skip (demo deployments)
+  if (!header || !header.startsWith("sha256=")) return false;
+  const expected =
+    "sha256=" +
+    crypto.createHmac("sha256", APP_SECRET).update(rawBody).digest("hex");
+  try {
+    return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(header));
+  } catch (e) {
+    return false;
+  }
+}
+
 export default async function handler(req, res) {
   // Enable CORS so any site can use the demo mode
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -115,7 +194,24 @@ export default async function handler(req, res) {
     return res.status(403).send("Forbidden");
   }
 
-  const body = typeof req.body === "object" ? req.body : {};
+  // POST — read the raw body ourselves (bodyParser is off for signature checks)
+  let rawBody;
+  try {
+    rawBody = await readRawBody(req);
+  } catch (e) {
+    return res.status(400).json({ status: "bad_body" });
+  }
+
+  if (APP_SECRET && !signatureValid(rawBody, req.headers["x-hub-signature-256"])) {
+    return res.status(401).json({ status: "invalid_signature" });
+  }
+
+  let body = {};
+  try {
+    body = JSON.parse(rawBody.toString("utf8") || "{}");
+  } catch (e) {
+    body = {};
+  }
 
   // DEMO MODE — returns the reply instead of sending it
   if (body.dryRun) {
